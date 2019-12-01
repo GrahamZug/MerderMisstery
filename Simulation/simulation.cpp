@@ -3,7 +3,8 @@
 #include <cstdlib>
 #include <ctime>
 
-const int SEED = 0;
+
+const int SEED = 1;
 const int EVENT_MODE = 0;
 const int DEBUG_MODE = 0;
 const int OBSERVATION_MODE = 0;
@@ -11,13 +12,19 @@ const int HEARSAY_MODE = 0;
 const int TOWN_SIZE = 12;
 const int LOCATION = 5;
 const int SELFCONTROL = 40;
+const int MURDER_MODE = 1;
+const int M = 982451653;
+const int MULTIPLIER = 373587883;
+int seed = 1; 
 int CLOCK = 0;
 
 enum relationshipDelta{
-	HATE = -50,
-	SDISLIKE = -30,
+	HATE = -75,
+	SDISLIKE = -60,
+	DESPISE = -30,
 	DISLIKE = -25,
 	DISCOMFORT = -10,
+	NEUTRAL = 0,
 	HAPPY = 5,
 	LIKE = 10,
 	LOVE = 25,
@@ -70,6 +77,15 @@ enum event{
 };
 
 
+// Code for the custom random number generator that's platfor independent
+
+int z_rand(){
+	seed = (seed*MULTIPLIER + 1) % M;
+	if(seed < 0)
+		seed = seed*-1;		
+	return seed;
+}
+
 class NPClite{
 
 public:
@@ -93,7 +109,7 @@ public:
 		for(int i = 0; i < TOWN_SIZE; i++)
 			relationships[i] = 0;
 		for(int i = 0; i < 5; i++){
-			personality[i] = (rand() % 101);
+			personality[i] = (z_rand() % 101);
 		}
 		murderiness = 0;
 		mood = 0;
@@ -103,13 +119,12 @@ public:
 	}	
 
 	NPClite(std::string name, int role){ //constructor
-		srand(time(NULL));
 		this->name = name;
 		this->role = role;
 		for(int i = 0; i < TOWN_SIZE; i++)
 			relationships[i] = 0;
 		for(int i = 0; i < 5; i++){
-			personality[i] = (rand() % 101);
+			personality[i] = (z_rand() % 101);
 		}
 		murderiness = 10;
 		mood = 0;
@@ -118,14 +133,15 @@ public:
 		lockDown = false;
 
 		switch(role){ //assign schedules
-				schedule[0] = TOWN_HALL;
+			case MAYOR:
+				schedule[0] = MARKET;
 				schedule[1] = MARKET;
-				schedule[2] = CHURCH;
-				schedule[3] = MARKET;
+				schedule[2] = FACTORY;
+				schedule[3] = INN;
 				schedule[4] = TOWN_HALL;
 				schedule[5] = MARKET;
 				schedule[6] = CHURCH;
-				schedule[7] = MARKET;
+				schedule[7] = INN;
 				schedule[8] = CHURCH;
 				schedule[9] = MARKET;
 				schedule[10] = TOWN_HALL;
@@ -135,11 +151,11 @@ public:
 				schedule[0] = FACTORY;
 				schedule[1] = MARKET;
 				schedule[2] = FACTORY;
-				schedule[3] = MARKET;
-				schedule[4] = INN;
+				schedule[3] = INN;
+				schedule[4] = TOWN_HALL;
 				schedule[5] = MARKET;
 				schedule[6] = CHURCH;
-				schedule[7] = MARKET;
+				schedule[7] = INN;
 				schedule[8] = CHURCH;
 				schedule[9] = MARKET;
 				schedule[10] = TOWN_HALL;
@@ -150,7 +166,7 @@ public:
 				schedule[1] = MARKET;
 				schedule[2] = FACTORY;
 				schedule[3] = INN;
-				schedule[4] = FACTORY;
+				schedule[4] = TOWN_HALL;
 				schedule[5] = MARKET;
 				schedule[6] = FACTORY;
 				schedule[7] = INN;
@@ -163,18 +179,18 @@ public:
 				schedule[0] = MARKET;
 				schedule[1] = MARKET;
 				schedule[2] = INN;
-				schedule[3] = MARKET;
+				schedule[3] = INN;
 				schedule[4] = MARKET;
 				schedule[5] = MARKET;
 				schedule[6] = INN;
-				schedule[7] = MARKET;
+				schedule[7] = INN;
 				schedule[8] = CHURCH;
 				schedule[9] = MARKET;
 				schedule[10] = TOWN_HALL;
 				schedule[11] = MARKET;
 				break;
 			case POLICE:
-				schedule[0] = TOWN_HALL;
+				schedule[0] = FACTORY;
 				schedule[1] = MARKET;
 				schedule[2] = FACTORY;
 				schedule[3] = INN;
@@ -307,9 +323,10 @@ void observe(NPClite* town, int firstNPC, int observer){
 	Event* e2 = new Event(getLastEvent(town, firstNPC), FIRSTHAND);
 	town[observer].observations.add(e2);
 }
+
 //changes listeners memory.
 void gossip(NPClite* town, Event* e, int listener){
-	Event* e2 = new Event(e, SECONDHAND);
+	Event* e2 = new Event(e, CLOCK, SECONDHAND);
 	town[listener].hearSay.add(e2);
 }
 //checks to see if someone observed an event first hand
@@ -323,7 +340,7 @@ bool initiatedEvent(NPClite* town, Event* e, int firstNPC){
 bool wasInvolvedInEvent(NPClite* town, Event* e, int firstNPC){
 	return (!e->npcName1.compare(town[firstNPC].name) || !e->npcName2.compare(town[firstNPC].name));
 }
-//adds memory too people experienced first hand
+//adds memory two people experienced first hand
 void addMemory(NPClite* town, int eventType, int firstNPC, int secondNPC){
 	Event* e = new Event(town[firstNPC].name, town[secondNPC].name, eventType, CLOCK, town[firstNPC].schedule[CLOCK%12], SUBJECT);
 
@@ -378,11 +395,11 @@ void date(NPClite* town, int firstNPC, int secondNPC){
 		observe(town, firstNPC, observer);
 		if(hasDoneEventMutual(town,DATE,observer,firstNPC)){
 			changeRelationship(town,observer,firstNPC,DISLIKE);
-			changeRelationship(town,observer,secondNPC,HATE);
+			changeRelationship(town,observer,secondNPC,DISLIKE);
 		}
 		if(hasDoneEventMutual(town,DATE,observer,secondNPC)){
 			changeRelationship(town,observer,secondNPC,DISLIKE);
-			changeRelationship(town,observer,firstNPC,HATE);
+			changeRelationship(town,observer,firstNPC,DISLIKE);
 		}
 	}
 }
@@ -402,8 +419,8 @@ void breakUp(NPClite* town, int firstNPC, int secondNPC){
 	addMemory(town, BREAKUP, firstNPC, secondNPC);
 	if(DEBUG_MODE)
 		printEvent(getLastEvent(town, firstNPC));
-	changeRelationship(town,firstNPC,secondNPC,HATE);
-	changeRelationship(town,secondNPC,firstNPC,HATE);
+	changeRelationship(town,firstNPC,secondNPC,SDISLIKE);
+	changeRelationship(town,secondNPC,firstNPC,SDISLIKE);
 
 	int observer = findObserver(town,firstNPC,secondNPC);
 	if(observer != -1){
@@ -415,8 +432,8 @@ void sex(NPClite* town, int firstNPC, int secondNPC){
 	addMemory(town, SEX, firstNPC, secondNPC);
 	if(DEBUG_MODE)
 		printEvent(getLastEvent(town, firstNPC));
-		changeRelationship(town,firstNPC,secondNPC,LIKE);
-		changeRelationship(town,secondNPC,firstNPC,LIKE);
+	changeRelationship(town,firstNPC,secondNPC,LIKE);
+	changeRelationship(town,secondNPC,firstNPC,LIKE);
 	int observer = findObserver(town,firstNPC,secondNPC);
 	if(observer != -1){
 		observe(town, firstNPC, observer);
@@ -452,7 +469,7 @@ void rob(NPClite* town, int firstNPC, int secondNPC){
 	int observer = findObserver(town,firstNPC,secondNPC);
 	if(observer != -1){
 		observe(town, firstNPC, observer);
-		changeRelationship(town,observer,firstNPC,DISLIKE);
+		changeRelationship(town,observer,firstNPC,DISCOMFORT);
 	}
 }
 
@@ -465,8 +482,6 @@ void verbalFight(NPClite* town, int firstNPC, int secondNPC){
 	int observer = findObserver(town,firstNPC,secondNPC);
 	if(observer != -1){
 		observe(town, firstNPC, observer);
-		changeRelationship(town,observer,firstNPC,DISCOMFORT);
-		changeRelationship(town,observer,secondNPC,DISCOMFORT);
 	}
 }
 
@@ -474,13 +489,12 @@ void physicalFight(NPClite* town, int firstNPC, int secondNPC){
 	addMemory(town,PHYSICALFIGHT,firstNPC,secondNPC);
 	if(DEBUG_MODE)
 		printEvent(getLastEvent(town, firstNPC));
-	changeRelationship(town,firstNPC,secondNPC,SDISLIKE);
-	changeRelationship(town,secondNPC,firstNPC,SDISLIKE);
+	changeRelationship(town,firstNPC,secondNPC,DESPISE);
+	changeRelationship(town,secondNPC,firstNPC,DESPISE);
 	int observer = findObserver(town,firstNPC,secondNPC);
 	if(observer != -1){
-		observe(town, firstNPC, observer);
 		changeRelationship(town,observer,firstNPC,DISCOMFORT);
-		changeRelationship(town,observer,secondNPC,DISCOMFORT);
+		observe(town, firstNPC, observer);
 	}
 }
 
@@ -497,8 +511,8 @@ void gossipRelationshipChange(NPClite* town, Event* e, int firstNPC){
 	}
 	if(hasDoneEventMutual(town,DATE,firstNPC,npc2) || hasDoneEventMutual(town,DATE,firstNPC,npc3)){
 		if(e->event == SEX){
-			changeRelationship(town,firstNPC,npc2,HATE);
-			changeRelationship(town,firstNPC,npc3,HATE);
+			changeRelationship(town,firstNPC,npc2,DESPISE);
+			changeRelationship(town,firstNPC,npc3,DESPISE);
 		}
 		if(e->event == FLIRT || e->event == DATE){
 			changeRelationship(town,firstNPC,npc2,DISLIKE);
@@ -507,19 +521,76 @@ void gossipRelationshipChange(NPClite* town, Event* e, int firstNPC){
 	}
 }
 
+int findRandomDisliked(NPClite* town, int murderer, int victim){
+	int dislikeCount = 0;
+	int relation[TOWN_SIZE];
+	for(int i = 0; i < TOWN_SIZE; i++){
+		relation[i] = -1;
+	}
+	for(int i = 0; i < TOWN_SIZE; i++){
+		if(town[i].relationships[victim] < 0 && i != murderer){ //NOTE: The murderer has "momentary omniscience," here. They know if someone dislikes the victim even if they've never interacted with them. This allows the murderer to tell more convincing lies, and it isn't a very noticable break in the narrative, as other NPCs can say things about people they've observed and haven't met. Nonetheless, it is something worth mentioning moving forward. The omniscience could be canceled by adding a "&& hasDoneEventMutual(town,INTRODUCE,i,murderer)" restriction to the above if statement.
+			dislikeCount++;
+			relation[i] = i;
+		}
+	}
+	if(dislikeCount){
+		int person = (z_rand() % dislikeCount) + 1;
+		for(int i = 0; i < TOWN_SIZE; i++){
+			if(relation[i] != -1)
+				person--;
+			if(!person)
+				return relation[i];
+		}
+	}
+	int person = z_rand() % TOWN_SIZE; //murderer just started lying if no one but them dislikes the murdered
+	while(person == victim || person == murderer)
+		person = z_rand() % TOWN_SIZE;
+	return person;
+}
+
+void makeUpCoverUp(NPClite* town, int murderer, int victim){
+	int clockModifierMeta = -1;
+	int numberOfLies = (town[murderer].personality[DISHONESTY] / 25) + 1;
+		if(numberOfLies > 3)
+			numberOfLies = 3;
+	for(int i = 0; i < numberOfLies; i++){
+		int npc1 = findRandomDisliked(town,murderer,victim);	
+		int lieEvent = (z_rand() % 4) + 1;
+		switch(lieEvent){
+			case 1: lieEvent = VERBALFIGHT; break;
+			case 2: lieEvent = PHYSICALFIGHT; break;
+			case 3: lieEvent = ROB; break;
+			case 4: lieEvent = ASKFORDISTANCE; break;
+		}
+		
+		int clockModifier = z_rand() % ((CLOCK % 4) + 1);
+		if(clockModifierMeta == -1)
+			clockModifierMeta = clockModifier;
+		if(clockModifierMeta == clockModifier)
+			clockModifier++;	
+
+		Event* lie = new Event(town[victim].name, town[npc1].name, lieEvent, CLOCK - clockModifier, town[npc1].schedule[(CLOCK - clockModifier)%12], FIRSTHAND);
+	town[murderer].observations.add(lie);
+	}
+}
+
 Event* makeUpLie(NPClite* town){
-	int flirtOrSex = rand() % 1;
-	if(flirtOrSex)
-		flirtOrSex = SEX;
-	else{
-		flirtOrSex = FLIRT;
+
+	int lieEvent = (z_rand() % 5) + 1;
+	switch(lieEvent){
+		case 1: lieEvent = FLIRT; break;
+		case 2: lieEvent = VERBALFIGHT; break;
+		case 3: lieEvent = PHYSICALFIGHT; break;
+		case 4: lieEvent = ROB; break;
+		case 5: lieEvent = SEX; break;
 	}
-	int npc1 = rand() % TOWN_SIZE;
-	int npc2 = rand() % TOWN_SIZE;
+		
+	int npc1 = z_rand() % TOWN_SIZE;
+	int npc2 = z_rand() % TOWN_SIZE;
 	while(npc1 == npc2){
-		npc2 = rand() % TOWN_SIZE;
+		npc2 = z_rand() % TOWN_SIZE;
 	}
-	Event* lie = new Event(town[npc1].name, town[npc2].name, flirtOrSex, CLOCK, town[npc1].schedule[CLOCK%12], SECONDHAND);
+	Event* lie = new Event(town[npc1].name, town[npc2].name, lieEvent, CLOCK, town[npc1].schedule[CLOCK%12], SECONDHAND);
 	return lie;
 }
 
@@ -536,8 +607,7 @@ void askForDistance(NPClite* town, int firstNPC, int secondNPC){
 	addMemory(town,ASKFORDISTANCE,firstNPC,secondNPC);
 	if(DEBUG_MODE)
 		printEvent(getLastEvent(town, firstNPC));
-	changeRelationship(town,firstNPC,secondNPC,DISCOMFORT);
-	changeRelationship(town,secondNPC,firstNPC,DISLIKE);
+	changeRelationship(town,secondNPC,firstNPC,DESPISE);
 	int observer = findObserver(town,firstNPC,secondNPC);
 	if(observer != -1){
 		observe(town, firstNPC, observer);
@@ -559,6 +629,7 @@ Event* getGossip(NPClite* town, int firstNPC, int secondNPC){
 				return town[firstNPC].memories.getMemory(j);
 		}
 	}
+	return NULL;
 }
 
 //the socialize event
@@ -585,7 +656,7 @@ void wakeUp(NPClite* town){
 			town[i].murderiness = -100;
 		if(town[i].murderiness > 200)
 			town[i].murderiness = 200;
-		town[i].mood = (rand() % 3) - 1;
+		town[i].mood = (z_rand() % 3) - 1;
 	}
 }
 //takes two NPCs as an input. Spits out the last event they had together.
@@ -595,12 +666,13 @@ Event* getLastInteraction(NPClite* town, int firstNPC, int secondNPC){
 			return town[firstNPC].memories.getMemory(i);
 		}
 	}
+	return NULL;
 }
 
 int roll(NPClite* town, int person, int type){
 	int chance;
 	if(type == HL){
-		chance = rand() % (SELFCONTROL + town[person].personality[DISHONESTY] + town[person].personality[LUST]);
+		chance = z_rand() % (SELFCONTROL + town[person].personality[DISHONESTY] + town[person].personality[LUST]);
 		if(chance < town[person].personality[DISHONESTY])
 			return DISHONESTY;
 		else{
@@ -612,7 +684,7 @@ int roll(NPClite* town, int person, int type){
 	}
 
 	if(type != DEFAULT){
-		chance = rand () % (SELFCONTROL + town[person].personality[type]);
+		chance = z_rand () % (SELFCONTROL + town[person].personality[type]);
 		if(chance < SELFCONTROL){
 			return DEFAULT;
 		} else return type;
@@ -622,7 +694,7 @@ int roll(NPClite* town, int person, int type){
 		sumPersonality = sumPersonality + town[person].personality[type];
 	}
 	sumPersonality = sumPersonality + 4*SELFCONTROL;
-	chance = rand() % sumPersonality;
+	chance = z_rand() % sumPersonality;
 	for(int i = LUST; i != DEFAULT; i++){
 		if(chance < town[person].personality[i])
 			return i;
@@ -633,7 +705,7 @@ int roll(NPClite* town, int person, int type){
 }
 
 void chooseAction(NPClite* town, int firstNPC, int secondNPC){
-	if(!hasDoneEvent(town,INTRODUCE,firstNPC,secondNPC)){
+	if(!hasDoneEventMutual(town,INTRODUCE,firstNPC,secondNPC)){
 		introduce(town,firstNPC,secondNPC);
 		return;
 	}
@@ -641,8 +713,13 @@ void chooseAction(NPClite* town, int firstNPC, int secondNPC){
 	int lastEvent = getLastInteraction(town,firstNPC,secondNPC)->event;
 	switch(lastEvent){
 		case FLIRT:
+			
 			trait = roll(town,firstNPC,HL);
-			if(trait == LUST){
+			if(getLastInteraction(town,firstNPC,secondNPC)->npcName1.compare(town[firstNPC].name) != 0 && trait == DISHONESTY){	
+				askForDistance(town,firstNPC,secondNPC);
+				return;				
+			}
+			if(trait == LUST && (!isDating(town,firstNPC) || town[firstNPC].personality[DISLOYALTY] > LOVE) && (!isDating(town,secondNPC) || town[secondNPC].personality[DISLOYALTY] > LOVE)){
 				sex(town,firstNPC,secondNPC);
 				return;
 			}
@@ -651,8 +728,7 @@ void chooseAction(NPClite* town, int firstNPC, int secondNPC){
 				return;
 			}
 			else{
-				askForDistance(town,firstNPC,secondNPC);
-				return;
+				break;
 			}
 		case DATE:
 			trait = roll(town,firstNPC,DISLOYALTY);
@@ -666,7 +742,7 @@ void chooseAction(NPClite* town, int firstNPC, int secondNPC){
 		case SEX:
 			break;
 		case ENVY:
-			if(!(town[firstNPC].memories.getMemory(lastEvent)->npcName1.compare(town[firstNPC].name) == 0)){
+			if(getLastInteraction(town,firstNPC,secondNPC)->npcName1.compare(town[firstNPC].name) != 0){
 				askForDistance(town,firstNPC,secondNPC);
 				return;
 			}
@@ -677,7 +753,7 @@ void chooseAction(NPClite* town, int firstNPC, int secondNPC){
 			}
 			break;
 		case ROB:
-			if(!(town[firstNPC].memories.getMemory(lastEvent)->npcName1.compare(town[firstNPC].name) == 0)){
+			if(getLastInteraction(town,firstNPC,secondNPC)->npcName1.compare(town[firstNPC].name) != 0){
 				verbalFight(town,firstNPC,secondNPC);
 				return;
 			}
@@ -693,14 +769,6 @@ void chooseAction(NPClite* town, int firstNPC, int secondNPC){
 		case LIE:
 			break;
 		case ASKFORDISTANCE:
-			if(town[firstNPC].memories.getMemory(lastEvent)->npcName1.compare(town[firstNPC].name) == 0){
-				break;
-			}
-			trait = roll(town,firstNPC,GREED);
-			if(trait == GREED){
-				rob(town,firstNPC,secondNPC);
-				return;
-			}
 			break;
 		case SOCIALIZE:
 			trait = roll(town,firstNPC,DEFAULT);
@@ -767,12 +835,11 @@ void interact(NPClite* town){
 				current[numberInLocation++] = j;
 			}
 		}
-		int n = sizeof(current)/sizeof(int);
 		while(numberInLocation > 1){
-			int a = rand() % numberInLocation;
-			int b = rand() % numberInLocation;
+			int a = z_rand() % numberInLocation;
+			int b = z_rand() % numberInLocation;
 			while(a == b)
-				b = rand() % numberInLocation;
+				b = z_rand() % numberInLocation;
 			chooseAction(town, current[a], current[b]);
 			numberInLocation = numberInLocation - 2;
 			swap(current,a,b,numberInLocation);
@@ -792,34 +859,27 @@ bool didMurder(NPClite* town){
 					if(DEBUG_MODE){
 						std::cout << "\n";
 						std::cout << town[i].name << " has murdered " << town[j].name << "\n";
-						town[i].didMurder = true;
-						town[j].isDead = true;
 				}
+					town[i].didMurder = true;
+					town[j].isDead = true;
+					makeUpCoverUp(town,i,j);
+					
+					if(MURDER_MODE){
+					std::cout << town[i].name << " is the murderer. \n \n\n\n\n\n\n\n\n\n\n\n\n";
+					std::cout << town[j].name << " is dead. \n";
+					}
+				
 				return true;
 			}
 		}
 	}
 	return false;
 }
-NPClite* simulation() {
-	unsigned int seed = time(NULL);
-	srand(seed);
+void simulation(NPClite* town, int givenSeed) {
+	CLOCK = 0;
+	seed = givenSeed;
 	if(SEED)
-		std::cout << "Seed: " << seed << "\n";
-	//townies
-	NPClite jarrett("Jarrett Billingsley", MAYOR); //0
-	NPClite kim("Kim Cardassian", POLICE); //1
-	NPClite pope("Pope Benedict IX", PRIEST); //2
-	NPClite gaben("Gabe Newall", INNKEEPER); //3
-	NPClite marie("Marie Curie", MERCHANT); //4
-	NPClite lary("Lary the Qcumber", MERCHANT); //5
-	NPClite luigi("Luigi", MERCHANT); //6
-	NPClite albert("Albert Einstein", MERCHANT); //7
-	NPClite dennis("Dennis Preger", WORKER); //8
-	NPClite helen("Helen of Troy", WORKER); //9
-	NPClite merge("Marge Simpzon", WORKER); //10
-	NPClite sigmund("Sigmund Frued", WORKER); //11
-	NPClite town[TOWN_SIZE] = {jarrett, kim, pope, gaben, marie, lary, luigi, albert, dennis, helen, merge, sigmund};
+		std::cout << "Seed: " << givenSeed << "\n";
 
 	bool murder = false;
 
@@ -834,9 +894,6 @@ NPClite* simulation() {
 			std::cout<<"\nThe members of the town are too kind. No one was murdered. \n";
 			murder = true;
 		}
-	}
-	if(SEED){	
-		std::cout << "Seed: " << seed << "\n";
 	}
 	if(EVENT_MODE){
 		for(int i = 0; i < TOWN_SIZE; i++){
@@ -859,5 +916,4 @@ NPClite* simulation() {
 		std::cout << "\n";
 		}
 	}
-	return town;
 }

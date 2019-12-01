@@ -1,21 +1,19 @@
 #include "simulation.cpp"
 
-const int DIALOGUE_OPTION_COUNT = 36;
-const int NUMBER_OF_STATES = 9;
+const int DIALOGUE_OPTION_COUNT = 40;
+const int NUMBER_OF_STATES = 10;
 const int DIALOGUE_OPTIONS_PER_STATE = 4;
 const int CHOOSE_NPC_MODE = 1;
 
 
 enum dishonesty{
 	LITERALLY_CANNOT_LIE = 5,
-	SOMEWHAT_DISHONEST = 25,
-	VERY_DISHONEST = 50,
-	EXTREMELY_DISHONEST = 75,
+	SOMEWHAT_DISHONEST = 10,
+	VERY_DISHONEST = 15,
 };
 
 enum stateOptions{
 	INITIAL_STATE,
-	NEXT_INITIAL_STATE,
 	NPCS1,
 	NPCS2,
 	NPCS3,
@@ -23,6 +21,8 @@ enum stateOptions{
 	ACTION1,
 	ACTION2,
 	ACTION3,
+	ACTION4,
+	SELF_OR_OTHERS,
 };
 
 enum dialogueOptions{
@@ -92,20 +92,13 @@ class dialogueOptionList{
 	
 	void printState(){
 		for(int i = 0; i < DIALOGUE_OPTIONS_PER_STATE; i++)
-			std::cout << i << ") " << options[i]->option << "\n";
+			std::cout << i << ") " << options[i]->option << "\n"; //TODO: This is the function that prints out each dialogue option for a given state. Change this so that options[i] is blitted to the ith dialogue rectangle. 
 	}
 	
 
 };
 
-/*dialogueOption* dialogueHash(int key){
-		
 
-	switch(key){
-		case INITIAL:
-		return new dialogueOption(q1, q2, q3, nextInitial);
-	}
-}*/
 
 std::string response(int option){
 	switch(option){
@@ -113,14 +106,19 @@ std::string response(int option){
 	}
 }
 
+int getNPC(NPClite* town){
+	for(int i = 0; i < TOWN_SIZE; i++){
+		if(town[i].isDead)
+			return i;
+	}
+}
+
 dialogueOptionList* initializeOptions(NPClite* town){
-	
-	dialogueOption* o0 = new dialogueOption("Who dislikes X?", HOWFEEL, NPCS1);
-	dialogueOption* o1 = new dialogueOption("When was the last time you saw X?", WHENSEEN, NPCS1);
-	dialogueOption* o2 = new dialogueOption("What is the gossip about X?",HEARD, NPCS1);
-	dialogueOption* o4= new dialogueOption("Who has X...?", DONEWITH, ACTION1);
-	dialogueOption* o5= new dialogueOption("What is X like?", WHATLIKE, NPCS1);
-	dialogueOption* o6= new dialogueOption("What is X's profession?", MOSTRECENT, NPCS1);
+	std::string dead = town[getNPC(town)].name;
+	dialogueOption* o0 = new dialogueOption("Who dislikes " + dead + "?", HOWFEEL, NPCS1);
+	dialogueOption* o1 = new dialogueOption("When was the last time you saw " + dead + "?", WHENSEEN, NPCS1);
+	dialogueOption* o2 = new dialogueOption("What have you gossip have you heard?",HEARD, NPCS1);
+	dialogueOption* o3= new dialogueOption("What have you...?", DONEWITH, ACTION1);
 	
 	dialogueOption* t0 = new dialogueOption(town[0].name, NPC0, INITIAL_STATE);
 	dialogueOption* t1 = new dialogueOption(town[1].name, NPC1, INITIAL_STATE);
@@ -144,18 +142,25 @@ dialogueOptionList* initializeOptions(NPClite* town){
 	dialogueOption* a6 = new dialogueOption("Robbed?", ROB, NPCS1);
 	dialogueOption* a7 = new dialogueOption("Verbally fought?", VERBALFIGHT, NPCS1);
 	dialogueOption* a8 = new dialogueOption("Physically fought?", PHYSICALFIGHT, NPCS1);
-
-	dialogueOption* n1 = new dialogueOption("NEXT", FILLER, NEXT_INITIAL_STATE);
-	dialogueOption* n2 = new dialogueOption("NEXT", FILLER, INITIAL_STATE);	
 	
-	dialogueOption* nNPC1 = new dialogueOption("NEXT", FILLER, NPCS2);
-	dialogueOption* nNPC2 = new dialogueOption("NEXT", FILLER, NPCS3);
-	dialogueOption* nNPC3 = new dialogueOption("NEXT", FILLER, NPCS4);
-	dialogueOption* nNPC4 = new dialogueOption("NEXT", FILLER, NPCS1);
+	
+	dialogueOption* nNPC1 = new dialogueOption(town[0].name + ", " + town[1].name + ", " + town[2].name + ", "+ town[3].name, FILLER, NPCS2);
+	dialogueOption* nNPC2 = new dialogueOption(town[4].name + ", " + town[5].name+ ", " + town[6].name+ ", " + town[7].name, FILLER, NPCS3);
+	dialogueOption* nNPC3 = new dialogueOption(town[8].name + ", " + town[9].name+ ", " + town[10].name + ", "+ town[11].name, FILLER, NPCS4);
 
-	dialogueOption* nA1 = new dialogueOption("NEXT", FILLER, ACTION2);
-	dialogueOption* nA2 = new dialogueOption("NEXT", FILLER, ACTION3);
-	dialogueOption* nA3 = new dialogueOption("NEXT", FILLER, ACTION1);
+	dialogueOption* nA1 = new dialogueOption("Asked for Distance? Flirted? Dated?", FILLER, ACTION2);
+	dialogueOption* nA2 = new dialogueOption("Things you can't in CS1666? Broken up? Gazed at?", FILLER, ACTION3);
+	dialogueOption* nA3 = new dialogueOption("Robbed? Verbally fought? Physically fought?", FILLER, ACTION4);
+
+	dialogueOption* self = new dialogueOption("done with " + dead + "?", FILLER, NPCS1);
+	dialogueOption* others = new dialogueOption("seen " + dead + " do with others?", FILLER, NPCS1);	
+
+	dialogueOption* blank = new dialogueOption("", FILLER, NPCS1);
+	dialogueOption* blank2 = new dialogueOption("", FILLER, ACTION1);
+	dialogueOption* blank3 = new dialogueOption("", FILLER, ACTION2);
+	dialogueOption* blank4 = new dialogueOption("", FILLER, ACTION3);
+	dialogueOption* blank5 = new dialogueOption("", FILLER, ACTION4);
+	dialogueOption* blank6 = new dialogueOption("", FILLER, SELF_OR_OTHERS);
 	
 	
 	dialogueOption** options = new dialogueOption*[DIALOGUE_OPTION_COUNT];
@@ -163,41 +168,50 @@ dialogueOptionList* initializeOptions(NPClite* town){
 	options[0] = o0;
 	options[1] = o1;
 	options[2] = o2;
-	options[3] = n1;
-	options[4] = o4;
-	options[5] = o5;
-	options[6] = o6;
-	options[7] = n2;
+	options[3] = o3;
+
+	options[4] = nNPC1;
+	options[5] = nNPC2;
+	options[6] = nNPC3;
+	options[7] = blank;
 
 	options[8] = t0;
 	options[9] = t1;
 	options[10] = t2;
-	options[11] = nNPC1;
-	options[12] = t3;
-	options[13] = t4;
-	options[14] = t5;
-	options[15] = nNPC2;
-	options[16] = t6;
-	options[17] = t7;
-	options[18] = t8;
-	options[19] = nNPC3;	
-	options[20] = t9;
-	options[21] = t10;
-	options[22] = t11;
-	options[23] = nNPC4;
+	options[11] = t3;
+	options[12] = t4;
+	options[13] = t5;
+	options[14] = t6;
+	options[15] = t7;	
+	options[16] = t8;
+	options[17] = t9;
+	options[18] = t10;
+	options[19] = t11;
+
+	options[20] = nA1;
+	options[21] = nA2;
+	options[22] = nA3;
+	options[23] = blank2;
+
 	options[24] = a0;
 	options[25] = a1;
 	options[26] = a2;
-	options[27] = nA1;
+	options[27] = blank3;
+
 	options[28] = a3;
 	options[29] = a4;
 	options[30] = a5;
-	options[31] = nA2;
+	options[31] = blank4;
+
 	options[32] = a6;
 	options[33] = a7;
 	options[34] = a8;
-	options[35] = nA3;
-	
+	options[35] = blank5;
+		
+	options[36] = others;
+	options[37] = self; //order here matter
+	options[38] = blank6;
+	options[39] = blank6;
 	
 	dialogueOptionList* globalList = new dialogueOptionList[NUMBER_OF_STATES];
 	
@@ -215,17 +229,17 @@ std::string eventConverterDialogue(int event){
 		case INTRODUCE:
 			return "was getting to know";
 		case DATE:
-			return "had just started dating";
+			return "started dating";
 		case BREAKUP:
-			return "had just broken up with";
+			return "broke up with";
 		case SEX:
 			return "was doing things you can't talk about in CS1666 with";
 		case SOCIALIZE:
-			return "has chatted with";
+			return "was chatting with";
 		case ENVY:
-			return "has glared, as if plotting theft, at";
+			return "was glaring with eyes of greed at";
 		case ROB:
-			return "has been accused of robbery by";
+			return "robbed";
 		case VERBALFIGHT:
 			return "got into a shouting match with";
 		case PHYSICALFIGHT:
@@ -240,10 +254,10 @@ std::string eventConverterDialogue(int event){
 
 std::string eventConverterAskEvent(int event){
 	switch(event){
+		case CDATE:
+			return "has been in a committed relationship with";
 		case FLIRT:
 			return "has flirted with";
-		case INTRODUCE:
-			return "knows";
 		case DATE:
 			return "has dated";
 		case BREAKUP:
@@ -251,7 +265,7 @@ std::string eventConverterAskEvent(int event){
 		case SEX:
 			return "has done thing you can't talk about in CS1666 with";
 		case ENVY:
-			return "has glared, as if plotting theft, at";
+			return "has glared with eyes of greed at";
 		case ROB:
 			return "has been accused of robbery by";
 		case VERBALFIGHT:
@@ -259,7 +273,9 @@ std::string eventConverterAskEvent(int event){
 		case PHYSICALFIGHT:
 			return "thrown hands with";
 		case LIE:
-			return "was telling a story to";
+			return "has gossiped with";
+		case SOCIALIZE:
+			return "has gossiped with";
 		case ASKFORDISTANCE:
 			return "has asked for distance from";
 		}
@@ -267,24 +283,120 @@ std::string eventConverterAskEvent(int event){
 }
 
 std::string getTime(int time){
-	if((CLOCK - time) < 4)
-		return "a few hours ago.";
-	if((CLOCK - time) < 8)
-		return "yesterday.";
-	if((CLOCK - time) < 12)
-		return "two days ago.";
-	return "more than two days ago.";
-}
-std::string doneWith(NPClite* town, int npc, int beingInterrogated, int event){
-	std::string action = "";	
-	if(town[beingInterrogated].observations.getSize()){	
-		for(int i = 0; i < town[beingInterrogated].observations.getSize(); i++){
-			if(event == ASKFORDISTANCE || event == ENVY || event == ROB){	
-				if(!town[beingInterrogated].observations.getMemory(i)->npcName1.compare(town[npc].name))
-					action = action + " " + town[beingInterrogated].observations.getMemory(i)->npcName2;
-			} 
+	std::string statement = "";
+	int days = (CLOCK - time)/4;
+	time = time % 4;
+	switch(time){
+		case 0:
+			statement = "in the morning.";
+			break;
+		case 1:
+			statement = "in the afternoon.";
+			break;
+		case 2:
+			statement = "in the evening.";
+			break;
+		case 3:
+			statement = "at night.";
+			break;
 		}
+	if(days)
+		statement = statement + " " + std::to_string(days) + " day(s) ago.";
+	return statement;
+}
+
+bool compareNames(NPClite* town, int npc1, std::string npc2){
+	if(!town[npc1].name.compare(npc2))
+		return true;
+	return false;
+}
+
+void printEventDialogue(Event* e){
+			std::cout << e->npcName1 << " " << eventConverterDialogue(e->event) << " " << e->npcName2 << " " << getTime(e->time) << " at " << locationConverter(e->location) << ". \n"; //TODO: Change std::cout to a blit to the screen.	
+}
+
+void printEventDialogueFPF(Event* e){
+			std::cout << "I " << eventConverterDialogue(e->event) << " " << e->npcName2 << " " << getTime(e->time) << " at " << locationConverter(e->location) << ". \n";	//TODO: Change std::cout to a blit to the screen.	
+}
+void printEventDialogueFPS(Event* e){
+			std::cout << e->npcName1 << " " << eventConverterDialogue(e->event) << " me " << getTime(e->time) << " at " << locationConverter(e->location) << ". \n"; //TODO: Change std::cout to a blit to the screen.		
+}
+
+void printEventDialogueGossip(Event* e){
+			std::cout << "I heard " << e->npcName1 << " " << eventConverterDialogue(e->event) << " " << e->npcName2 << " " << getTime(e->time) << " at " << locationConverter(e->location) << ". \n"; //TODO: Change std::cout to a blit to the screen.		
+}
+
+bool suspeciousEvent(int event){
+	if(event == BREAKUP || event == ROB || event == PHYSICALFIGHT) return true;
+	return false;
+}
+
+bool slightlySuspeciousEvent(int event){
+	if(event == ASKFORDISTANCE || event == VERBALFIGHT || event == ENVY) return true;
+	return false;
+}
+
+bool sayPersonalEventMurderer(NPClite* town, int event, int beingInterrogated){
+	
+	if(town[beingInterrogated].didMurder)
+
+	if((!suspeciousEvent(event) 
+	|| town[beingInterrogated].personality[DISHONESTY] < SOMEWHAT_DISHONEST)
+	&& (!slightlySuspeciousEvent(event) 
+	|| town[beingInterrogated].personality[DISHONESTY] < VERY_DISHONEST)){
+		return true;
 	}
+	return false;
+}
+
+bool sayPersonalEvent(NPClite* town, int event, int beingInterrogated){
+	
+	if(town[beingInterrogated].didMurder)
+		return sayPersonalEventMurderer(town,event,beingInterrogated);
+	if((!suspeciousEvent(event) 
+	|| town[beingInterrogated].personality[DISHONESTY] < LITERALLY_CANNOT_LIE)
+	&& (!slightlySuspeciousEvent(event) 
+	|| town[beingInterrogated].personality[DISHONESTY] < SOMEWHAT_DISHONEST)){
+		return true;
+	}
+	return false;
+}
+
+void doneWithSelf(NPClite* town, int beingInterrogated, int npc){
+	bool anyEvent = false;
+	for(int i = 0; i < town[beingInterrogated].memories.getSize(); i++){
+		Event* e = town[beingInterrogated].memories.getMemory(i);
+		if(compareNames(town,npc,e->npcName1) && e->event != INTRODUCE && e->event != SOCIALIZE && !suspeciousEvent(e->event)){
+			printEventDialogueFPS(e);
+			anyEvent = true;
+			}
+		if(compareNames(town,npc,e->npcName2) 
+		&& e->event != INTRODUCE 
+		&& e->event != SOCIALIZE 
+		&& sayPersonalEvent(town, e->event, beingInterrogated)){
+			printEventDialogueFPF(e);
+			anyEvent = true;
+			}
+	}
+	if(!anyEvent)
+		std::cout << "I've only made small talk with " << town[npc].name + "."; //TODO: Change std::cout to a blit to the screen.	
+}
+
+void doneWith(NPClite* town, int beingInterrogated, int npc){
+	bool anyEvent = false;
+	for(int i = 0; i < town[beingInterrogated].observations.getSize(); i++){
+		Event* e = town[beingInterrogated].observations.getMemory(i);
+		if(compareNames(town,npc,e->npcName1) && e->event != INTRODUCE && e->event != SOCIALIZE){
+			printEventDialogue(e);
+			anyEvent = true;
+			}
+		if(compareNames(town,npc,e->npcName2) && e->event != INTRODUCE && e->event != SOCIALIZE){
+			printEventDialogue(e);
+			anyEvent = true;
+			}
+	}
+	if(!anyEvent)
+	std::cout << "I've only ever seen " << town[npc].name + " make small talk with others."; //TODO: Change std::cout to a blit to the screen.	
 }
 std::string howFeel(NPClite* town, int npc, int beingInterrogated){
 	std::string dislike = "";
@@ -295,7 +407,7 @@ std::string howFeel(NPClite* town, int npc, int beingInterrogated){
 				if(i != beingInterrogated){
 					nobody = false;			
 					dislike = dislike + town[i].name;
-				}else if (town[beingInterrogated].personality[DISHONESTY] < VERY_DISHONEST){
+				}else if (!town[npc].isDead || (!town[beingInterrogated].didMurder && town[beingInterrogated].personality[DISHONESTY] < VERY_DISHONEST) || (town[beingInterrogated].didMurder && town[beingInterrogated].personality[DISHONESTY] < SOMEWHAT_DISHONEST)){
 					nobody = false;
 					dislike = dislike + "I";
 				}
@@ -313,172 +425,189 @@ std::string howFeel(NPClite* town, int npc, int beingInterrogated){
 	return dislike;
 }
 
-std::string heard(NPClite* town, int npc, int beingInterrogated){
-	if(npc == beingInterrogated)
-		return "People usually don't gossip about me.";
-	std::string lastMemory = "I don't know any gossip about " + town[npc].name;
-	int event = -1;
-	Event* e = new Event();
+bool eventsAreEqual(Event* e, Event* e2){
+	if(!e->npcName1.compare(e2->npcName1) && (!e->npcName2.compare(e2->npcName2)) &&
+	(e->event == e2->event)){
+		return true;
+	}
+	return false;
+}
 
-	for(int i = town[beingInterrogated].hearSay.getSize(); i > -1; i--){
-		if(wasInvolvedInEvent(town,town[beingInterrogated].hearSay.getMemory(i),npc)){
-			event = town[beingInterrogated].hearSay.getMemory(i)->event;
-			e = town[beingInterrogated].hearSay.getMemory(i);
-			break;
+void heard(NPClite* town, int beingInterrogated){
+	Event* gossip[town[beingInterrogated].hearSay.getSize()];
+	int j = 0;
+	for(int i = 0; i < town[beingInterrogated].hearSay.getSize(); i++){
+		bool alreadyMentioned = false;
+		for(int k = 0; k < j; k++){
+			if(eventsAreEqual(town[beingInterrogated].hearSay.getMemory(i), gossip[k]))
+			alreadyMentioned = true;
+		}
+		if(!alreadyMentioned && !wasInvolvedInEvent(town,town[beingInterrogated].hearSay.getMemory(i),beingInterrogated)){
+			printEventDialogueGossip(town[beingInterrogated].hearSay.getMemory(i));
+			gossip[j++] = town[beingInterrogated].hearSay.getMemory(i);
 		}
 	}
-
-	if(event != -1){
-		lastMemory = "I heard " + e->npcName1 + " was " + eventConverterDialogue(event) + " " + e->npcName2 + ".";		
-	}
-	return lastMemory;
 }
 
 std::string whenSeen(NPClite* town, int npc, int beingInterrogated){
-	std::string lastMemory = "I can't remember when I last saw " + town[npc].name;
+	std::string lastMemory = "I can't remember when I last saw " + town[npc].name; //TODO: Change std::cout to a blit to the screen.	
 	int event = -1;
 	int eventTime = -1;
 	Event* e = new Event();
 	bool wasObservation = false;
-	for(int i = town[beingInterrogated].memories.getSize(); i > -1; i--){
-		if(wasInvolvedInEvent(town,town[beingInterrogated].memories.getMemory(i),npc)){
+	for(int i = town[beingInterrogated].memories.getSize() - 1; i > -1; i--){
+		if(wasInvolvedInEvent(town,town[beingInterrogated].memories.getMemory(i),npc) && 
+sayPersonalEvent(town,town[beingInterrogated].memories.getMemory(i)->event,beingInterrogated)){
 			event = town[beingInterrogated].memories.getMemory(i)->event;
 			eventTime = town[beingInterrogated].memories.getMemory(i)->time;
 			e = town[beingInterrogated].memories.getMemory(i);
 			break;
 		}
 	}
-	for(int i = town[beingInterrogated].observations.getSize(); i > -1; i--){
-		if(wasInvolvedInEvent(town,town[beingInterrogated].observations.getMemory(i),npc) && town[beingInterrogated].observations.getMemory(i)->time > eventTime){
-			event = town[beingInterrogated].observations.getMemory(i)->event;
-			eventTime = town[beingInterrogated].observations.getMemory(i)->time;
-			e = town[beingInterrogated].observations.getMemory(i);
-			wasObservation = true;
-			break;
+	if(town[beingInterrogated].observations.getSize()){
+		for(int i = town[beingInterrogated].observations.getSize() - 1; i > -1; i--){
+			if(wasInvolvedInEvent(town,town[beingInterrogated].observations.getMemory(i),npc) && town[beingInterrogated].observations.getMemory(i)->time > eventTime){
+				event = town[beingInterrogated].observations.getMemory(i)->event;
+				eventTime = town[beingInterrogated].observations.getMemory(i)->time;
+				e = town[beingInterrogated].observations.getMemory(i);
+				wasObservation = true;
+				break;
+				}
+			}
 		}
-	}
 	if(event != -1){
-	if(!e->npcName1.compare(town[beingInterrogated].name)){
-		lastMemory = ". I was " + eventConverterDialogue(event) + " " + e->npcName2 + ". That was " + getTime(eventTime);
+		if(!e->npcName1.compare(town[beingInterrogated].name)){
+		lastMemory = "I " + eventConverterDialogue(event) + " " + e->npcName2 + " at " + locationConverter(e->location) + ". That was " + getTime(eventTime);
 	return lastMemory;		
 	}
-	if(!e->npcName2.compare(town[beingInterrogated].name)){
-		lastMemory = e->npcName1 + " was " + eventConverterDialogue(event) + " me. That was " + getTime(eventTime);
+		if(!e->npcName2.compare(town[beingInterrogated].name)){
+		lastMemory = e->npcName1 + " " + eventConverterDialogue(event) + " me" + " at " + locationConverter(e->location) + ". That was " + getTime(eventTime);
 	return lastMemory;	
 	}
-		lastMemory = e->npcName1 + " was " + eventConverterDialogue(event) + " " + e->npcName2 + ". That was " + getTime(eventTime);
+		lastMemory = e->npcName1 + " " + eventConverterDialogue(event) + " " + e->npcName2 + " at " + locationConverter(e->location) + ". That was " + getTime(eventTime);
 	}
 	return lastMemory;
 }
 
-int getNPC(NPClite* town, dialogueOptionList* globalOptionList, int dialogueState, int input){
-	globalOptionList[dialogueState].printState(); //THIS NEEDS TO BE BLIT'D TO THE SCREEN
-	std::cin >> input;//EDIT THIS IN THE ACTUAL IMPLEMENTATION
-	while(input % 4 == 3){
-		dialogueState = globalOptionList[dialogueState].options[input]->nextTag;
+bool selfOrOthers(dialogueOptionList* globalOptionList){
+	int dialogueState = SELF_OR_OTHERS;
+	int input = -1;
+	globalOptionList[SELF_OR_OTHERS].printState();
+	std::cin >> input; //TODO: Replace this with a choice of an interger representation of one of the dialogue boxes. 
+	dialogueState = globalOptionList[dialogueState].options[input]->nextTag;
+	while(input % 4 == 3 || input % 4 == 2){
 		globalOptionList[dialogueState].printState(); //THIS NEEDS TO BE BLIT'D TO THE SCREEN
-		std::cin >> input;//EDIT THIS IN THE ACTUAL IMPLEMENTATION
-			}
-	return globalOptionList[dialogueState].options[input]->tag;
+		std::cin >> input; //TODO: Replace this with a choice of an interger representation of one of the dialogue boxes. 
+		dialogueState = globalOptionList[dialogueState].options[input]->nextTag;
+		}
+	return (input == 1);
 }
 
-int main(){
-	unsigned int seed = time(NULL);
-	srand(seed);
-	if(SEED)
-		std::cout << "Seed: " << seed << "\n";
-	//townies
-	NPClite jarrett("Jarrett Billingsley", MAYOR); //0
-	NPClite kim("Kim Cardassian", POLICE); //1
-	NPClite pope("Pope Benedict IX", PRIEST); //2
-	NPClite gaben("Gabe Newall", INNKEEPER); //3
-	NPClite marie("Marie Curie", MERCHANT); //4
-	NPClite lary("Lary the Qcumber", MERCHANT); //5
-	NPClite luigi("Luigi", MERCHANT); //6
-	NPClite albert("Albert Einstein", MERCHANT); //7
-	NPClite dennis("Dennis Preger", WORKER); //8
-	NPClite helen("Helen of Troy", WORKER); //9
-	NPClite merge("Marge Simpzon", WORKER); //10
-	NPClite sigmund("Sigmund Frued", WORKER); //11
-	NPClite town[TOWN_SIZE] = {jarrett, kim, pope, gaben, marie, lary, luigi, albert, dennis, helen, merge, sigmund};
-
-	bool murder = false;
-
-	while(!murder){
-		if(CLOCK%4 == 0){
-			wakeUp(town);
+//This method was going to be the method for getting an NPC of the player's choice to ask about, but in practice, the only information the player needs involves relationships with the dead person.
+/*
+int getNPC(NPClite* town, dialogueOptionList* globalOptionList, int dialogueState){
+	int input = -1;
+	globalOptionList[dialogueState].printState(); //THIS NEEDS TO BE BLIT'D TO THE SCREEN
+	std::cin >> input;//EDIT THIS IN THE ACTUAL IMPLEMENTATION
+	dialogueState = globalOptionList[dialogueState].options[input]->nextTag;
+	while(input % 4 == 3){
+		globalOptionList[dialogueState].printState(); //THIS NEEDS TO BE BLIT'D TO THE SCREEN
+		std::cin >> input;//EDIT THIS IN THE ACTUAL IMPLEMENTATION
+		dialogueState = globalOptionList[dialogueState].options[input]->nextTag;
+		}
+		globalOptionList[dialogueState].printState(); //THIS NEEDS TO BE BLIT'D TO THE SCREEN
+		std::cin >> input;//EDIT THIS IN THE ACTUAL IMPLEMENTATION
+	
+	return globalOptionList[dialogueState].options[input]->tag;
+}
+*/
+//This method was never used, but was kept because it may be used in a future implementation
+/*
+int getAction(NPClite* town, dialogueOptionList* globalOptionList, int dialogueState){
+	int input = -1;
+	for(int i = 0; i < 2; i++){
+		globalOptionList[dialogueState].printState(); //THIS NEEDS TO BE BLIT'D TO THE SCREEN
+		std::cin >> input; 
+		dialogueState = globalOptionList[dialogueState].options[input]->nextTag;
+		while(input % 4 == 3){
+			globalOptionList[dialogueState].printState(); //THIS NEEDS TO BE BLIT'D TO THE SCREEN
+			std::cin >> input;//EDIT THIS IN THE ACTUAL IMPLEMENTATION
+			dialogueState = globalOptionList[dialogueState].options[input]->nextTag;
 			}
-		tick(town);
-		if(didMurder(town))
-				break;
-		if(CLOCK == 200){
-			std::cout<<"\nThe members of the town are too kind. No one was murdered. \n";
-			murder = true;
+		}
+	return globalOptionList[dialogueState].options[input]->tag;
+} */
+
+bool goodMurder(NPClite* town){
+	int suspects = 0;
+	int victim = -1;
+	for(int i = 0; i < TOWN_SIZE; i++){
+		if(town[i].isDead){
+			victim = i;
+			break;
 		}
 	}
-	if(SEED){	
-		std::cout << "Seed: " << seed << "\n";
+	if(victim == -1)
+		return false;
+	for(int i = 0; i < TOWN_SIZE; i++){
+		if(town[i].relationships[victim] < 0)
+			suspects++;
 	}
-	if(EVENT_MODE){
-		for(int i = 0; i < TOWN_SIZE; i++){
-			for(int j = 0; j < town[i].memories.getSize(); j++)
-				printEvent(town[i].memories.getMemory(j));
-		std::cout << "\n";
-		}
-	}
-	if(HEARSAY_MODE){
-		for(int i = 0; i < TOWN_SIZE; i++){
-			for(int j = 0; j < town[i].hearSay.getSize(); j++)
-				printEvent(town[i].hearSay.getMemory(j));
-		std::cout << "\n";
-		}
-	}
-	if(OBSERVATION_MODE){
-		for(int i = 0; i < TOWN_SIZE; i++){
-			for(int j = 0; j < town[i].observations.getSize(); j++)
-				printEvent(town[i].observations.getMemory(j));
-		std::cout << "\n";
-		}
-	}
+	if(suspects > 2)
+		return true;
+	return false;
+}
+
+
+
+int dialogue(NPClite* town){
 	dialogueOptionList* globalOptionList = initializeOptions(town);	
 	int dialogueState = INITIAL_STATE;
 	int npcBeingInterrogated = 0;
 	int input = -1;
-	int currentQuestion = -1;
-	int currentNPC = -1;
+	//int currentQuestion = -1;
+	//int currentNPC = -1; useful if commented out functions are included
+
+	//TODO: This while loop is a place holder. It should be replaced with a "While the user doesn't press the quit dialogue button" loop. 
 	while(npcBeingInterrogated != -1){
 		if(CHOOSE_NPC_MODE){
 			std::cout << "\n" << "Who to Interrogate?" << "\n";
 			for(int i = 0; i < TOWN_SIZE; i++)
 				std::cout << i << ") " << town[i].name << "\n";
-			std::cin >> npcBeingInterrogated;
+			std::cin >> npcBeingInterrogated; //TODO: npcBeingInterrogated should be changed so that it is always set to the integer representing the position of the NPC being talked to in the town array. Perhaps this should be an added argument to the dialogue function. 
 		}
 		input = -1;
-		globalOptionList[dialogueState].printState(); //THIS NEEDS TO BE BLIT'D TO THE SCREEN
+		globalOptionList[dialogueState].printState(); 
+		//TODO: This while loop can be taken out after implementing a dialogue selection.
 		while(input < 0 || input > 3){
-			std::cin >> input;//EDIT THIS IN THE ACTUAL IMPLEMENTATION			
+			std::cin >> input; //TODO: This input represents a selection of a dialogue option, so replace it with an integer representation of each dialogue option. (e.g. a 0 represents the "who dislikes (murdered) question.)			
 		}
 		int tag = globalOptionList[dialogueState].options[input]->tag;
 		dialogueState = globalOptionList[dialogueState].options[input]->nextTag;
 		std::string output = "";
 		if(tag == HOWFEEL){
-			int npc = getNPC(town,globalOptionList,dialogueState,input);
-			output = howFeel(town, npc, npcBeingInterrogated);			
+			int npc = getNPC(town);
+			output = howFeel(town, npc, npcBeingInterrogated);	
+			std::cout << output; //TODO: Change std::cout to a blit to the screen.				
 		}
 		if(tag == WHENSEEN){
-			int npc = getNPC(town,globalOptionList,dialogueState,input);
+			int npc = getNPC(town);
 			output = whenSeen(town,npc,npcBeingInterrogated);	
+			std::cout << output; //TODO: Change std::cout to a blit to the screen.		
 		}
-		if(tag == HEARD){
-			int npc = getNPC(town,globalOptionList,dialogueState,input);
-			output = heard(town,npc,npcBeingInterrogated);
+		if(tag == HEARD){ 
+			heard(town,npcBeingInterrogated);
 		}
 		if(tag == DONEWITH){
-			int npc = getNPC(town,globalOptionList,dialogueState,input);
-			output = doneWith(town,npc,npcBeingInterrogated,3);	
+			bool isSelf = selfOrOthers(globalOptionList);
+			int npc = getNPC(town);
+			if(isSelf){
+				doneWithSelf(town,npcBeingInterrogated, npc);
+			}else{
+				doneWith(town,npcBeingInterrogated,npc);
+			}	
 		}
-			std::cout << output;
-			dialogueState = globalOptionList[dialogueState].options[input]->nextTag; 
+			dialogueState = INITIAL_STATE; 
 	}	
 	return 0;
 }
